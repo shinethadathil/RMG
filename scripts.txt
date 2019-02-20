@@ -1,0 +1,198 @@
+mkdir RMG
+cd RMG
+--1) Create new webapi
+dotnet new webapi -o RmgErpApp.API -n RmgErpApp.API   
+
+--2) Open Visual Studio Code
+code .
+
+--3) Add Extensions
+	Code Expensions for WebAPI:
+	1) C# for Visual Studio Code (powered by omni sharp)
+	2) C# Extensions - C# IDE extensions for visual studio code
+	3) Nuget package manager
+
+	Angular Extensions:
+	1) Angular v7 snippets by John Papa
+	2) Angular Files by Alexander Ivanichev
+	3) Angular language service
+	4) Angular2-switcher
+	5) Auto Rename Tag
+	6) Bracket Pair Colorizer
+	7) Debugger for Chrome
+	8) Material Icon Theme
+	9) Path Intellisense
+	10) Prettier - Code formatter for Visual Studio Code
+	11) TSLint - vscode-tslint
+
+--4 Startup.cs -> Configure method
+	comment 
+		//app.UseHsts();
+		//app.UseHttpsRedirection();
+--5 Properties -> launchsettings.json
+	Remove https://localhost:5001; under "applicationUrl and jsut keep only http://localhost:5000
+	
+--6 Necessary short cut keys
+	Show all commands : Ctrl + Shift + P
+	Go to File : Ctrl + P
+	Find in Files : Ctrl + Shift + F
+	Start Debugging : F5
+	Toggle Terminal : Ctrl + ~
+	
+	Code Options : Ctrl + .
+	
+--7 Run the project
+	dotnet run
+	dotnet watch run
+	Now listening on: http://localhost:5000
+	
+--8 Creating the Model and DataContext
+	a. Create Models -> Value.css (table col value properties)
+	b. Create folder Data -> public class DataContext : DbContext
+		public DataContext(DbContextOptions<DataContext> options) : base (options) {}
+		public DbSet<Value> Values { get; set; }
+		
+	c. Startup.css --> ConfigureServices ->  add DbContext as a service
+		services.AddDbContext<DataContext>(x => x.UseSqlServer("ConnectionString"));
+		i. UseSqlServer --> Need to install a nugetpackage for SqlServer
+			Ctrl + Shift + P --> Nuget package manager: Add package
+				Microsoft.EntityFrameworkCore.SqlServer
+					select version and enter
+		RmgErpApp.API.csproj -> this adds  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="2.2.2"/>
+					
+--9 Creating the Database using Entity Framework migrations	
+	a. Setup the DB Connection string in appsettings.json
+		"ConnectionStrings":{
+			"DefaultConnection": "Data Source=.;Initial Catalog=RMG_DEV;Integrated Security=SSPI;MultipleActiveResultSets=true;"
+		 }, 
+	b. Startup.cs --> replace "ConnectionString" UseSqlServer("ConnectionString") with the appsettings.json key value settings
+		services.AddDbContext<DataContext>(x => x.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+	c. Add the DB using entity frame work
+		$ dotnet ef -h  
+		Commands:
+		  database    Commands to manage the database.
+		  dbcontext   Commands to manage DbContext types.
+		  migrations  Commands to manage migrations.
+		
+		$ dotnet ef migrations add InitialDBCreation
+		$ dotnet ef database update  --> this will create/update the data base with that of the DB context for which we ran a migration
+--10 Retrieving data from the Database	
+		a. Go to the controller method
+		b. initialize the DBContext in the constructor
+			private readonly DataContext _context;
+			public ValuesController(DataContext context)
+			{
+				_context = context;
+			}
+		c. IActionResult --> which will return the http responses
+			[HttpGet]
+			public IActionResult GetValues()
+			{
+				var values = _context.Values.ToList();
+				return Ok(values);
+			}
+--11 Making our code asynchronous
+		use async keyword on the function definition and retrun a  Task of IActionResult
+		await and ToListAsync() inside the db fetch operation
+			public async Task<IActionResult> GetValues()
+			{
+				var values = await _context.Values.ToListAsync();
+				return Ok(values);
+			}
+--12 Creating the Angular application using AngularCLI
+	npm install -g @angular/cli
+	ng new my-dream-app
+	cd my-dream-app
+	ng serve
+	http://localhost:4200/
+--13 The Angular bootstrapping and running the Angular app
+	e2e folder --> For testing
+	node_modules --> angular packages 
+	angular.json
+	package.json
+	src -> app --> components 
+		startupfiles -> app.component.**
+		app.module --> 		
+			import { AppComponent } from './app.component';
+			@NgModule({
+			  declarations: [
+				AppComponent
+			  ],
+			bootstrap: [AppComponent] --> 
+				app.component.ts 
+					import { Component } from '@angular/core';
+					@Component({
+							  selector: 'app-root', --> identifier or html tag used in index.html -> <body><app-root></app-root></body>
+							  templateUrl: './app.component.html', --> html template for this component
+							  styleUrls: ['./app.component.css']  --> styles for this component
+							})
+							export class AppComponent {  --> making this component availabe to outside
+							  title = 'RmgErpApp-SPA';
+							}
+					main.ts --> platformBrowserDynamic().bootstrapModule(AppModule)
+					Webpack --> angular.json --> 
+						"index": "src/index.html",
+						"main": "src/main.ts",
+--14 Making HTTP requests in Angular
+	create a component
+	app.module --> import the component
+				-> add under @NgModule -> declarations:
+		import { HttpClientModule } from '@angular/common/http';
+		then add HttpClientModule under @NgModule ->imports: 
+	initialize the HttpClient in the new component in the constructor
+				constructor(private http: HttpClient) {}
+	write a method to use the webapi
+		getValues() {
+		this.http.get('http://localhost:5000/api/values').subscribe(response => {
+		  this.values = response;
+		}, error => {
+		  console.log(error);
+		});
+	call the method getValues() frim ngOninit
+			ngOnInit() {this.getValues();  }
+			
+	alt+o --> go to the component's html page
+	alt+u --> go to the component.ts file
+	
+	CORS policy	--> Cross Origin Resource Sharing
+	Error: Access to XMLHttpRequest at 'http://localhost:5000/api/values' from origin 'http://localhost:4200' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+--15 Adding CORS support to the API
+	startup.cs --> ConfigureServices -> add services.AddCors();
+				->	app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+					app.UseMvc();
+				now refresh the page and check browser's network->Header : Access-Control-Allow-Origin: *
+--16 Displaying data from the API on the HTML page
+	component.html -> use a- to get the directives
+--17 Adding Bootstrap and Font-Awesome to our Angular app
+	https://getbootstrap.com/
+	https://fontawesome.com/  --> icons
+	$ CD <SPAproj>
+	$ npm install bootstrap font-awesome
+	styles.css --> import bootstrap and font-awesome
+		@import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
+		@import '../node_modules/font-awesome/css/font-awesome.min.css';
+--18 Adding GIT for source control
+	install git from https://git-scm.com/
+	$ git status
+	remove the default git reository from the project (hidden folder .git)
+		C:\RMG\RmgErpApp-SPA\.git
+	but keep the .gitignore file --> 
+	$CD <basedirectory>
+	$ git init  --> Initialized empty Git repository in C:/RMG/.git/
+	$ CD <webapiProj> --> create a .gitignore file and add the files/folders to ignore
+		.gitignore --> 
+					.vscode
+					bin
+					obj
+					*.db
+					
+	
+	
+	
+
+
+		
+				
+		
+		
+	
