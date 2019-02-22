@@ -185,6 +185,79 @@ code .
 					bin
 					obj
 					*.db
+	Now go to the SourceControl
+		give a message -> InitialCommit
+			CHNAGES -> + button --> stage our changes
+			Commit the changes to the git repository -> ctrl + Enter OR click the tick mark
+				--> these are stored to our local repository
+	https://github.com/ --> create an account
+	Login and create a new repository
+	our repository is now : git remote add origin https://github.com/shinethadathil/RMG.git
+	SourceControl -> push to -> remote git repository
+	Now our proj will be availabe on remote git location
+
+********************************************************************************************
+********************************************************************************************
+--Security
+********************************************************************************************
+********************************************************************************************
+1. Storing passwords in the Database
+	Hashing passwords --> SHA512 --> same decrypt for the same pwd
+	Salting passwords --> Hash + Salt --> different decrypt for the same pwd
+2. Creating the User model
+	Model -> User.cs 
+		public byte[] PasswordHash { get; set; }
+		public byte[] PasswordSalt { get; set; }
+	Data -> DataContext
+		public DbSet<User> Users { get; set; }
+	Add the User entity to the db
+		$ dotnet ef migrations add AddedUserEntity
+		$ dotnet ef database update --> update the changes to the database
+3. The Repository pattern:
+	Mediates between the data source layer and the business layers of the application
+	It queries the data source for the data
+	Maps the data from the data source to a business entity
+	And persists changes in the business entity to the data source
+	A repository separates the business logic from the interactions with the underlying data source or web service
+	
+	Kestrel -> Controller -> DbContext -> EF -> DbContext
+	Kestrel -> Controller -> RepositoryInterface -> RepositoryImplementation -> DbContext -> EF -> DbContext
+	
+	Why Repository pattern?
+		Minimizes duplicate query logic
+		Decouples application from persistence framework (entity framework)
+		All DB queries in the same place
+4. Creating an Interface for the Repository	
+	Data -> create an iterface
+	Data -> create a class to implement that interface
+				get the DbContext in the construnctor of the class\
+					private readonly DataContext _context;
+					public AuthRepository(DataContext context)
+					{
+						_context = context;
+					}
+5. Registering services in the Startup class
+	Startup.css -> ConfigureServices -> 
+		services.AddScoped<IAuthRepository, AuthRepository>();
+6. Creating the Register method in our Auth Controller
+	: ControllerBase --> base class for an MVC controller without view support.
+		    public class AuthController : ControllerBase
+			{
+				private readonly IAuthRepository _repo;
+				public AuthController(IAuthRepository repo)
+				{
+					_repo = repo;  --> initializes the db context
+				}
+			}
+			
+	
+
+	
+
+
+	
+			
+		
 					
 	
 	
