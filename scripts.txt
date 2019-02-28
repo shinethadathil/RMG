@@ -40,17 +40,17 @@ code .
 	Toggle Terminal : Ctrl + ~
 	
 	Code Options : Ctrl + .
-	
+		
 --7 Run the project
 	dotnet run
-	dotnet watch run
+	dotnet watch run 
 	Now listening on: http://localhost:5000
 	
 --8 Creating the Model and DataContext
 	a. Create Models -> Value.css (table col value properties)
-	b. Create folder Data -> public class DataContext : DbContext
+	b. Create folder "Data" -> public class DataContext : DbContext
 		public DataContext(DbContextOptions<DataContext> options) : base (options) {}
-		public DbSet<Value> Values { get; set; }
+		public DbSet<Value> Values { get; set; } --> New table to be created
 		
 	c. Startup.css --> ConfigureServices ->  add DbContext as a service
 		services.AddDbContext<DataContext>(x => x.UseSqlServer("ConnectionString"));
@@ -93,7 +93,7 @@ code .
 			}
 --11 Making our code asynchronous
 		use async keyword on the function definition and retrun a  Task of IActionResult
-		await and ToListAsync() inside the db fetch operation
+		use "await" keyword and ToListAsync() inside the db fetch operation
 			public async Task<IActionResult> GetValues()
 			{
 				var values = await _context.Values.ToListAsync();
@@ -162,7 +162,7 @@ code .
 					app.UseMvc();
 				now refresh the page and check browser's network->Header : Access-Control-Allow-Origin: *
 --16 Displaying data from the API on the HTML page
-	component.html -> use a- to get the directives
+	component.html -> use "a-" to get the directives
 --17 Adding Bootstrap and Font-Awesome to our Angular app
 	https://getbootstrap.com/
 	https://fontawesome.com/  --> icons
@@ -228,9 +228,9 @@ code .
 		Decouples application from persistence framework (entity framework)
 		All DB queries in the same place
 4. Creating an Interface for the Repository	
-	Data -> create an iterface
+	Data -> create an interface
 	Data -> create a class to implement that interface
-				get the DbContext in the construnctor of the class\
+				get the DbContext in the construnctor of the class
 					private readonly DataContext _context;
 					public AuthRepository(DataContext context)
 					{
@@ -246,10 +246,79 @@ code .
 				private readonly IAuthRepository _repo;
 				public AuthController(IAuthRepository repo)
 				{
-					_repo = repo;  --> initializes the db context
+					_repo = repo;  --> initializes the Irepository
 				}
 			}
+7. Using DTOs (Data Transfer Objects)
+8. Debugger :
+	click on debugger icon
+		Add Configuration -> Dotnet Core -> Dotnet core attach
+		open launch.json -> button below "add Configuration.." -> {}.Net attach to local .Net core console app
+			--> click on Run icon next to .Net Core Attach --> Select the applications dll (make sure the applications is running)
+			--> Put break point and run in postman the post/get
+9. Validations
+	DTO -> put DataAnnotations
+		[Required]
+		
+		[Required]
+        [StringLength(8, MinimumLength = 4, ErrorMessage="The password should be 4-8 characters")]
+	--> We dont need to inform the controller about this validation. 
+	 the [ApiController] attribut inside the .
+	 controller file will coordinate this
+10. Token Authentication -> https://jwt.io/
+	JWTs -> JSON Web Tokens
+		-store credentials, claims and other info
+	JWT Structure
+		-> Header
+			{
+				"alg" : "HS512", --> algorithm to encrypt the token
+				"typ" : "JWT"	--> type
+			}
+		-> Payload
+			{
+				"nameid" : "8",
+				"uniue_name" : "jose",
+				"nbf" : 15111196807, --> not before-> from when the token can be used
+				"exp" : 15111196807, --> expiry
+				"iat" : 15111196807  --> issued at
+			}
+		-> Signature 
+			A secret key will be stored on the server and never revealed to the client 
+					ex: "AppSettings":{"Token": "JWT super secret key" }
+			client will send the token to the server and server will use the secret key to validate the token.
 			
+		HMACSHA256(  --> algorith to hash the heade and the payload
+			base64UrlEncode(header) + "." +
+			base64UrlEncode(payload),
+			secret
+			) secret base64 encoded
+		client -> userid/password -> server validates and sends back JWT to client.
+		Client can store this token locally and for the later requests, the client sends JWT for further requests.
+		Then server validates JWT and sends back the response. 
+		So no need to validate the user with the database for every request. Instead JWT token validation will be enough.	
+
+11. Using the Authentication middleware
+		[Authorize] -> attribute in the class level on the controller
+		[AllowAnonymous] -> method level overrride attribute
+		Add authentication middleware in the startup.css
+			 -> add JWT authentication as a service in startup.css
+				services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                .AddJwtBearer(options => {
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetSection("AppSettings:Token").Value)),
+                        ValidateIssuer = false,
+                        ValidateAudience = false
+                    };
+                });
+			 -> Now tell the application about the authentication.
+			    So under Configure method add the authentication
+					app.UseAuthentication();
+					app.UseMvc();
+			
+		
+		
 	
 
 	
