@@ -317,9 +317,59 @@ code .
 					app.UseAuthentication();
 					app.UseMvc();
 			
-		
-		
+***********************************************************
+SPA
+***********************************************************
+12. AngularForms
+		component.html -> <form #loginForm="ngForm" ..
+		appmodule -> import {FormsModule} from '@angular/forms';
+				  -> imports: [ ..... FormsModule]
+13. Angular Services
+	Create _service folder under app folder
+	right click and "Generate Service" 
+	In serices we need @Injectable ddecorator --> allows inject things to our service
+	But in components are injectable by defalut so no need to specify @Injectable ddecorator
+		import { Injectable } from '@angular/core';
+		@Injectable({  --> allows inject things to our service
+		  providedIn: 'root'
+		})
+		export class AuthService {
+		constructor() { }
+		}
+	Register this service in the app.module
+		import { AuthService } from './_services/auth.service';
+		providers: [AuthService],
+	service.ts -> constructor(private http: HttpClient) --> http client module to our service
 	
+14. Make use of service
+	component -> Inject the service to the constructor 
+
+15. Parent to Child Component communication using Input properties
+	In parent html -> <app-child [valuesFromParent]="values"></app-child>
+	In child ts file -> 
+		export class ChildComponent implements OnInit {
+			@Input() valuesFromParent: any;  --> also import Input from angular core -> import { Component, OnInit, Input } from '@angular/core';
+	In child html -> 
+			<option  *ngFor="let value of valuesFromParent" [value]="value">{{value.name}}</option> 
+	
+	** Now the values from parent is available in child component
+
+16. Component Communication Child to Parent using Output properties 
+	In child component
+		-> add an @Output property
+		-> output property emits events
+			@Output() cancelRegister = new EventEmitter();
+			import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+			cancel() { this.cancelRegister.emit(false);}
+	In the parent component.html
+		-> (cancelRegister)="cancelRegisterMode($event)
+		-> <app-child [valuesFromParent]="values" (cancelRegister)="cancelRegisterMode($event)"></app-child>
+	In the parent ts	
+		-> cancelRegisterMode(registerMode: boolean) {
+					this.registerMode = registerMode;
+					}
+					
+		
 
 	
 

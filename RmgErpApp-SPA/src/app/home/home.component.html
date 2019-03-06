@@ -1,0 +1,22 @@
+<div class="container mt-5">
+    <div *ngIf="!registerMode"  style="text-align:center">
+        <h1 class="jumbotron-heading">Register yourself for access</h1>
+        <p class="lead text-muted">Welcome to RMG. All you need to register to access the modules!</p>
+        <p>
+          <a href="#" class="btn btn-primary mr-2" (click)="registerToggle()">Register</a>
+          <a href="#" class="btn btn-info">Learn More</a>
+        </p>
+    </div>
+
+    <div *ngIf="registerMode" class="container">
+      <div class="row justify-content-center">
+        <div class="col-4">
+            <!-- <app-register [valuesFromHome]="values" (cancelRegister)="cancelRegisterMode($event)"></app-register> -->
+            <app-register (cancelRegister)="cancelRegisterMode($event)"></app-register>
+        </div>
+      </div>
+    </div>    
+
+</div>
+
+<!-- <p *ngFor="let value of values">{{value.name}}</p> -->
