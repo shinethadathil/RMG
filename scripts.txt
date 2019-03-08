@@ -369,7 +369,49 @@ SPA
 					this.registerMode = registerMode;
 					}
 					
-		
+Exception Handling:
+=====================
+API -> Properties folder -> launchsettings.json -> "ASPNETCORE_ENVIRONMENT": "Development" // option is "Production"
+API -> Startup.cs -> Configure method -> 
+			if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                //app.UseHsts();
+            }
+
+17. Setting up the Global exception handler in the API
+	API -> Create a folder "Helpers"
+	new static class -> Extensions.cs
+		public static void AddApplicationError(this HttpResponse response, string message)
+        {
+            response.Headers.Add("Application-Error", message);
+            response.Headers.Add("Access-Control-Expose-Headers", "Application-Error");
+            response.Headers.Add("Access-Control-Allow-Origin", "*");
+        }
+	Startup.cs -> Configure method ->
+			if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler(builder => {
+                    builder.Run(async context => {
+                        context.Response.StatusCode = (int) HttpStatusCode.InternalServerError;
+                        var error = context.Features.Get<IExceptionHandlerFeature>();
+
+                        if(error != null)
+                        {
+                            context.Response.AddApplicationError(error.Error.Message);
+                            await context.Response.WriteAsync(error.Error.Message);
+                        }
+                    });
+                });
+18. 
 
 	
 
