@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, ɵConsole } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -18,24 +18,35 @@ export class ErrorInterceptor implements HttpInterceptor {
                         console.error(applicationError);
                         return throwError(applicationError);
                     }
-                }
-                const serverError = error.error;
-                let modalStateErrors = '';
-                if (serverError && typeof serverError === 'object') {
-                    for (const key in serverError) {
-                        if (serverError[key]) {
-                            modalStateErrors += serverError[key] + '\n';
+                    const serverError = error.error;
+                    let modalStateErrors = '';
+                    if (serverError && typeof serverError === 'object') {
+                        for (const key in serverError) {
+                            // if (key === 'errors') {
+                            //         console.log('Inside erros');
+                            //         const i = serverError[key];
+                            //         console.log('sdfsdfsdf == ' + i);
+                            //         }
+                            //         // modalStateErrors += errors[e] + '\n';
+                            //     }
+                            // }
+                            if (serverError[key]) {
+                                // console.log('key ====' + key);
+                                // console.log('serverError === ' + serverError);
+                                // console.log('serverError[key] === ' + serverError[key]);
+                                modalStateErrors += serverError[key] + '\n';
+                            }
                         }
                     }
+                    console.log(modalStateErrors);
+                    return throwError(modalStateErrors || serverError || 'ServerError');
                 }
-                return throwError(modalStateErrors || serverError || 'ServerError');
             })
         );
     }
-
 }
 
-export const ErrorInterceptorProvide = {
+export const ErrorInterceptorProvider = {
     provide: HTTP_INTERCEPTORS,
     useClass: ErrorInterceptor,
     multi: true

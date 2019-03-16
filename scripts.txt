@@ -411,9 +411,125 @@ API -> Startup.cs -> Configure method ->
                         }
                     });
                 });
-18. 
+18. Error Handling in Angular SPA
+	Errors -> Applicaion Error, Model state error
+	HttpInterceptor -> intercept any errors 
+	create an interceptor file - error.interceptor.ts under _services and throw these back to the calling methods.
+	This gives control over the errors.
+	create a class which implements HttpInterceptor	
+		@Injectable()
+		export class ErrorInterceptor implements HttpInterceptor {
+			intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+				return next.handle(req).pipe(
+					catchError(error => {
+						if (error instanceof HttpErrorResponse) {
+							if (error.status === 401) {
+								return throwError(error.statusText);
+							}
 
+							const applicationError = error.headers.get('Application-Error');
+							if (applicationError) {
+								console.error(applicationError);
+								return throwError(applicationError);
+							}
+						}
+						const serverError = error.error;
+						let modalStateErrors = '';
+						if (serverError && typeof serverError === 'object') {
+							for (const key in serverError) {
+								if (serverError[key]) {
+									modalStateErrors += serverError[key] + '\n';
+								}
+							}
+						}
+						return throwError(modalStateErrors || serverError || 'ServerError');
+					})
+				);
+			}
+		}
+		
+	-> Expose the error handling method Create an errorInterceptor Provider to use the Interceptor class
+	export const ErrorInterceptorProvider = {
+	provide: HTTP_INTERCEPTORS,
+	useClass: ErrorInterceptor,
+	multi: true
+	};		
+		
+	Register it in the app.module.ts under section "providers"
+		   providers: [
+			  AuthService,
+			  ErrorInterceptorProvider ]
 	
+
+19. Adding 3rd party components to our app
+	Alertifyjs -> alertifyjs.com
+	Angular JWT 
+	NGX Bootstrap -> bootstrap for angular application 
+	Bootswatch -> change themes
+	
+	a. Alertifyjs 
+		-> cd angularapplicationSPA
+		-> https://alertifyjs.com/ -> view on github -> copy the below cmd
+		-> npm install alertifyjs --save
+		-> angular.json ->  "scripts": [
+              "node_modules/alertifyjs/build/alertify.min.js"
+            ]
+		-> src -> styles.css
+				@import '../node_modules/alertifyjs/build/css/alertify.min.css';
+				@import '../node_modules/alertifyjs/build/css/themes/bootstrap.rtl.min.css';
+		-> Create a service ->
+			_service -> create a service alertify -> wrapper method for the alertify service
+			import { Injectable } from '@angular/core';
+			declare let alertify: any;
+			@Injectable({
+			  providedIn: 'root'
+			})
+			export class AlertifyService {
+			constructor() {}
+			
+			success(message: string) {
+			alertify.success(message);
+			}
+			
+		--> class -> constructor user the service 
+			constructor(private authService: AuthService, private alertify: AlertifyService)
+			class -> method -> messages -> user alertify
+				this.alertify.success('Logged in successfully');
+				
+				
+		
+	b)Using the Angular JWT library to improve token handling	
+		https://github.com/auth0/angular2-jwt
+		npm install @auth0/angular-jwt
+		auth.service.ts -> 
+			import {JwtHelperService} from '@auth0/angular-jwt';
+			  
+			export class AuthService {
+			baseUrl = 'http://localhost:5000/api/auth/';
+			jwtHelper = new JwtHelperService();
+			
+			loggedIn() {
+			  const token = localStorage.getItem('token');
+			  return !this.jwtHelper.isTokenExpired(token);
+			}
+		nav.component.ts -> 
+			  loggedIn() {
+				// const token = localStorage.getItem('token');
+				// return !! token; // !! if token null, then return false else return true
+				return this.authService.loggedIn();
+			  }
+	c) ngx-bootstrap -> https://valor-software.com/ngx-bootstrap/#/
+		npm install ngx-bootstrap --save
+		app.module -> 
+			import { BsDropdownModule } from 'ngx-bootstrap';
+			imports: [BsDropdownModule.forRoot(), .... ]
+	d) Bringing some color to our app with a theme from Bootswatch
+		https://bootswatch.com/
+		npm install bootswatch@4.1.1
+		style.css -> include the min.js	of the required theme
+				@import '../node_modules/bootswatch/dist/united/bootstrap.min.css';
+	
+	   
 
 
 	
