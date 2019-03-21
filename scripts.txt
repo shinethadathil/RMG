@@ -498,7 +498,8 @@ API -> Startup.cs -> Configure method ->
 				
 				
 		
-	b)Using the Angular JWT library to improve token handling	
+	b)Using the Angular JWT library to improve token handling
+		- decode token, check token status etc.
 		https://github.com/auth0/angular2-jwt
 		npm install @auth0/angular-jwt
 		auth.service.ts -> 
@@ -519,6 +520,7 @@ API -> Startup.cs -> Configure method ->
 				return this.authService.loggedIn();
 			  }
 	c) ngx-bootstrap -> https://valor-software.com/ngx-bootstrap/#/
+		--> avoid the use of query
 		npm install ngx-bootstrap --save
 		app.module -> 
 			import { BsDropdownModule } from 'ngx-bootstrap';
@@ -528,8 +530,99 @@ API -> Startup.cs -> Configure method ->
 		npm install bootswatch@4.1.1
 		style.css -> include the min.js	of the required theme
 				@import '../node_modules/bootswatch/dist/united/bootstrap.min.css';
+
+20. Routing in Angular	
+	add a new file "routes.ts" under app folder
+		first match win from the Routes list
+		import { Routes } from '@angular/router';
+		import { HomeComponent } from './home/home.component';
+		import { PurchaseOrderComponent } from './purchase-order/purchase-order.component';
+
+		export const appRoutes: Routes = [
+		{ path: 'home', component: HomeComponent},
+		{ path: 'po', component: PurchaseOrderComponent},
+		{path: '**', redirectTo: 'home', pathMatch: 'full'},
+		];
+	add the angular RouterModule to the app.module under imports section
+		RouterModule.forRoot(appRoutes) --> appRoutes the class we created.
+	update the routes in the components -> add the routerLink directive
+		<li class="nav-item" routerLinkActive="active">
+          <a class="nav-link" [routerLink]="['/po']" >Purchase Order</a>
+        </li>        
+		
+	modify the app.component.html and include the router outlet
+		<router-outlet></router-outlet>
 	
-	   
+21. Using routing in our components
+		add private router: Router in our component's constructor.
+		then we can use this.router.navigate(['/po']); in our code where we want a navigation
+		-> import { Router } from '@angular/router';
+		-> constructor(public authService: AuthService, private alertify: AlertifyService,private router: Router) { }
+		->	login() {
+				this.authService.login(this.model).subscribe(next => {
+				this.alertify.success('Logged in successfully');
+				}, error => {
+					this.alertify.error(error);
+					}, () => {
+				this.router.navigate(['/po']);
+			});
+			
+		->	logout() {
+				localStorage.removeItem('token');
+				this.alertify.message('logged out!');
+				this.router.navigate(['/home']);
+			}
+
+22. Protecting our routes with a route guard
+	SPA -> create _guards folder under src/app 	
+	cd RmgErpApp-SPA/src/app/_guards -> ng g guard auth --skipTests (or ng g guard auth --spec=false )
+	
+	auth.guard.ts ->
+	export class AuthGuard implements CanActivate {
+		constructor ( private authService: AuthService, private router: Router,
+		private alertify: AlertifyService) {}
+		canActivate(): boolean {
+		if (this.authService.loggedIn()) {
+		  return true;
+		}
+		this.alertify.error('You shall not pass!!!');
+		this.router.navigate(['/home']);
+		return false;
+		}
+	}
+	
+	app.module.ts -> include the AuthGuard inside providers
+		providers: [
+		  AuthService,
+		  ErrorInterceptorProvider,
+		  AlertifyService,
+		  AuthGuard
+		],
+	
+	routes.ts -> include the "canActivate"
+		export const appRoutes: Routes = [
+		{ path: 'home', component: HomeComponent},
+		{ path: 'po', component: PurchaseOrderComponent, canActivate: [AuthGuard]},
+		{path: '**', redirectTo: 'home', pathMatch: 'full'},
+		];
+	 
+23. Protecting multiple routes with a single route guard using dummy routes
+	create dummy route and child routes
+	
+	export const appRoutes: Routes = [
+		{ path: '', component: HomeComponent}, // home
+		{
+			path: '',
+			runGuardsAndResolvers: 'always',
+			canActivate: [AuthGuard],
+			children: [
+				{ path: 'po', component: PurchaseOrderComponent},
+				{ path: 'materials', component: MaterialsComponent},
+				{ path: 'register', component: RegisterComponent},
+			]
+		},
+		{path: '**', redirectTo: '', pathMatch: 'full'},
+	];
 
 
 	
